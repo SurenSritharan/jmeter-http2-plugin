@@ -1,6 +1,5 @@
 package com.blazemeter.jmeter.http2.core;
 
-import com.blazemeter.jmeter.http2.sampler.HTTP2Sampler;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -13,14 +12,17 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Pattern;
 import java.util.stream.StreamSupport;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jmeter.protocol.http.control.AuthManager;
 import org.apache.jmeter.protocol.http.control.Authorization;
@@ -68,6 +70,8 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.blazemeter.jmeter.http2.sampler.HTTP2Sampler;
+
 public class HTTP2JettyClient {
   public static final MappedByteBufferPool BUFFER_POOL = new MappedByteBufferPool(
       JMeterUtils.getPropDefault("httpJettyClient.byteBufferPoolFactor", 4));
@@ -91,7 +95,7 @@ public class HTTP2JettyClient {
   private int maxConnectionsPerDestination = 1;
   private boolean strictEventOrdering = false;
   private boolean removeIdleDestinations = true;
-  private int idleTimeout = 30000;
+  private long idleTimeout = Duration.ofMinutes(2).toMillis();
   private final HttpClient httpClient;
   private boolean http1UpgradeRequired;
 
@@ -99,6 +103,7 @@ public class HTTP2JettyClient {
     loadProperties();
     ClientConnector clientConnector = new ClientConnector();
     SslContextFactory.Client sslContextFactory = new JMeterJettySslContextFactory();
+    sslContextFactory.setSslSessionTimeout(0);
     clientConnector.setSslContextFactory(sslContextFactory);
     QueuedThreadPool queuedThreadPool = new QueuedThreadPool(maxThreads);
     queuedThreadPool.setMinThreads(minThreads);
@@ -132,7 +137,7 @@ public class HTTP2JettyClient {
   }
 
   public void loadProperties() {
-    requestTimeout = JMeterUtils.getPropDefault("HTTPSampler.response_timeout", 0);
+    requestTimeout = JMeterUtils.getPropDefault("responseTimeout", 0);
     maxBufferSize =
         Integer.parseInt(JMeterUtils.getPropDefault("httpJettyClient.maxBufferSize",
             String.valueOf(2 * 1024 * 1024)));
