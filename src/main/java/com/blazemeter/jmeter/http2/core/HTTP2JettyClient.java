@@ -595,13 +595,18 @@ public class HTTP2JettyClient {
     return redirectLocation;
   }
 
-  private void saveCookiesInCookieManager(ContentResponse response, URL url,
-      CookieManager cookieManager) {
-    String cookieHeader = response.getHeaders().get(HTTPConstants.HEADER_SET_COOKIE);
-    if (cookieHeader != null && cookieManager != null) {
-      cookieManager.addCookieFromHeader(cookieHeader, url);
-    }
-  }
+	private void saveCookiesInCookieManager(ContentResponse response, URL url, CookieManager cookieManager) {
+		Iterator<HttpField> iterator = response.getHeaders().iterator();
+		while (iterator.hasNext()) {
+			HttpField field = iterator.next();
+			if (field.is(HTTPConstants.HEADER_SET_COOKIE)) {
+				String cookieHeader = field.getValue();
+				if (cookieHeader != null && cookieManager != null) {
+					cookieManager.addCookieFromHeader(cookieHeader, url);
+				}
+			}
+		}
+	}
 
   public void clearCookies() {
     httpClient.getCookieStore().removeAll();
